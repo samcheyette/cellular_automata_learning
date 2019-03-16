@@ -67,12 +67,42 @@ def levenshtein(seq1, seq2):
 
 
 def hamming(s1,s2):
-    assert(len(s1) == len(s1))
+    assert(len(s1) == len(s2))
     c = 0
     for i in range(len(s1)):
         if (s1[i] != s2[i]):
             c += 1
     return c
+
+def equi_dist(s1,s2):
+    assert(len(s1) == len(s2))
+    n0,n1 = 1.,1.
+    c0,c1 = 1.,1.
+    n_t,n_c = 0.,0.
+
+
+    for i in range(len(s1)):
+        n_t += 1
+        if (s1[i] == s2[i]):
+            if s1[i] == 0:
+                c0 += 1
+            else:
+                c1 += 1
+            n_c += 1.
+        if (s2[i] == 0):
+            n0 += 1
+        else:
+            n1 += 1
+
+
+    p0 = ((n0-c0)/n0) * n_t * 0.5
+    p1 = ((n1-c1)/n1) * n_t * 0.5
+    pc = (n_t - n_c)
+
+    p = 0.5 * (p0 + p1) + 0.5 * pc
+
+
+    return p
 
 def inputs_targets_1(n_cell, n_ex):
     inputs, targets = [],[]
@@ -80,10 +110,10 @@ def inputs_targets_1(n_cell, n_ex):
     for i in range(n_ex):
         inp = [str(0) for _ in range(n_cell-2)]
         tgt = [str(0) for _ in range(n_cell-2)]
-        flip = random.randint(0,n_cell-8)
-        for j in range(7):
+        flip = random.randint(0,n_cell-14)
+        for j in range(9):
             inp[flip+j] = "1"
-            tgt[flip+j+1] = "1"
+            tgt[flip+j+3] = "1"
 
 
         inp = "0" + "".join(inp) + "0"
@@ -101,8 +131,8 @@ def inputs_targets_2(n_cell, n_ex):
     for i in range(n_ex):
         inp = [str(0) for _ in range(n_cell-2)]
         tgt = [str(1) for _ in range(n_cell-2)]
-        flip = random.randint(0,n_cell-9)
-        for j in range(7):
+        flip = random.randint(0,n_cell-11)
+        for j in range(9):
             inp[flip+j] = "1"
             tgt[flip+j] = "0"
 
@@ -132,6 +162,29 @@ def inputs_targets_3(n_cell, n_ex):
         targets.append(tgt)
 
     return inputs,targets
+
+
+def inputs_targets_4(n_cell, n_ex):
+    inputs, targets = [],[]
+
+    for i in range(n_ex):
+        #in_0 = "0000000000000" +
+        in_0 = ""
+        in_0 +=  "{0:b}".format(i) 
+        inp =  [in_0] + [str(0) for _ in range(n_cell-2-len(in_0))]
+        tgt = [str(0) for _ in range(n_cell-2)]
+
+        for j in range(i):
+            tgt[j] = "1"
+
+        inp = "0" + "".join(inp) + "0"
+        tgt = "0" + "".join(tgt) + "0"
+        inputs.append(inp)
+        targets.append(tgt)
+
+    return inputs,targets
+
+
 
 
 ###########################################################
@@ -280,14 +333,6 @@ class Grid():
                 cell.change_rules(rules)
 
 
-    def draw_targets(self, targets):
-        for i in range(len(self.cells[0])):
-            cell = self.cells[0][i]
-            color = (int(targets[i])*200,0,0)
-            pygame.draw.rect(screen, color,(cell.x,cell.y,cell.size,cell.size+1),
-                    2)
-
-
                 
 
     def change_row_rules(self, row, rules):
@@ -299,7 +344,15 @@ class Grid():
             cell.change_rules(rules)
 
             #self.cells[row][col] = cell
+                
 
+    def change_col_rules(self, col, rules):
+        for row in range(self.margin,len(self.cells)-self.margin):
+                #self.cells[row][col].change_rules(rules)
+                                #cell.change_rules(rules)
+
+            cell = self.cells[row][col]
+            cell.change_rules(rules)
 
     def change_cell_rules(self, row,col, rules):
                 #self.cells[row][col].change_rules(rules)
@@ -309,6 +362,15 @@ class Grid():
         cell.change_rules(rules)
 
         #self.cells[row][col] = cell
+
+
+    def draw_targets(self, targets):
+        for i in range(len(self.cells[0])):
+            cell = self.cells[0][i]
+            color = (int(targets[i])*200,0,0)
+            pygame.draw.rect(screen, color,(cell.x,cell.y,cell.size,cell.size+1),
+                    2)
+
 
     def change_state(self, cell_row,cell_col,state):
         assert(cell_row < len(self.cells) - self.margin)
@@ -394,17 +456,9 @@ def main(n_cells, grid_size, margin):
     grid = Grid(grid_size,margin, all_rules)
 
     init_rules = []
-    init_rules += ["010"]
-    #init_rules += ["101"]
-    #init_rules += ["001"]
-    #init_rules += ["100"]
 
-    init_rules += ["000"]
-    #init_rules = ["101"]
-    #init_rules += ["100"]
-    #init_rules += ["001"]
-    #init_rules = ["110"]
-    #init_rules = ["011"]
+    #init_rules = ["001", "011", "110", "111"]
+    init_rules = ["100", "000", "001"]
 
     grid.change_all_rules(init_rules)
 
@@ -423,7 +477,7 @@ def main(n_cells, grid_size, margin):
     #inputs = ["0"+i+"0" for i in inputs]
     #targets = inputs
     #targets = ["0"*20,"0"*20,"0"*20,"0" + "001"*6 + "0","0"*20]
-    inputs,targets = inputs_targets_3(n_cells,15)
+    inputs,targets = inputs_targets_3(n_cells,10)
     print(inputs)
     print(targets)
     distance = 0
@@ -431,12 +485,12 @@ def main(n_cells, grid_size, margin):
     curr_posterior = None
     curr_distance = None
     curr_likelihood = None
-    curr_rules = []
+    curr_rules = [(-1,-1,i) for i in init_rules]
 
     best_posterior = curr_posterior
     best_likelihood = curr_likelihood
     best_distance = curr_distance
-    best_rules = []
+    best_rules = [(-1,-1,i) for i in init_rules]
 
     print("D: ", distance)
 
@@ -468,14 +522,16 @@ def main(n_cells, grid_size, margin):
                 if event.key == pygame.K_RIGHT:
                    # n = input("How many steps: ")
                     #print(n)
-                    n = 25
+                    n = 100
 
                     for i in range(int(n)):
                         grid.reset()
                         pygame.display.update()
 
 
-                        remove = (random.random() < 0.5) and (len(curr_rules) > 0)
+                        lcr = (1.-(1./(len(curr_rules) + 1.)))*0.4
+                        print lcr
+                        remove = (random.random() < lcr)
                         if ( remove):
                             pr = curr_rules[random.randint(0,len(curr_rules)-1)]
                             proposal_row,proposal_col,proposal_rule= pr
@@ -493,20 +549,31 @@ def main(n_cells, grid_size, margin):
 
                             proposal_rule= [all_rule_keys[random.randint(0,len(all_rule_keys)-1)]]
                         
-                            r_row = random.random() < 0.2
-                            r_col = random.random() < 0.1
+                            r_row = random.random() < 0.5
+                            r_col = random.random() < 0.5
                             proposal_row, proposal_col = -1,-1 #need to implement
 
+
                             if r_row:
-                                proposal_row = random.randint(margin-1,len(grid.cells)-margin-1)
+                                if random.random() < 0.25:
+                                    proposal_row = 0
+                                else:
+                                    proposal_row = random.randint(margin-1,len(grid.cells)-margin-1)
                                 if r_col:
                                     proposal_col = random.randint(margin, len(grid.cells[0])-margin-1)
                                     grid.change_cell_rules(proposal_row,proposal_col,proposal_rule)
                                 else:
                                     grid.change_row_rules(proposal_row, proposal_rule)
 
+                            elif r_col:
+                                proposal_col = random.randint(margin, len(grid.cells[0])-margin-1)
+                                grid.change_col_rules(proposal_col, proposal_rule)
+
                             else:
                                 grid.change_all_rules(proposal_rule)
+
+                            if (proposal_row,proposal_col,proposal_rule[0]) in curr_rules:
+                                remove = True
 
                         print "PROPOSE: ", proposal_row,proposal_rule
                         if remove:
@@ -526,25 +593,25 @@ def main(n_cells, grid_size, margin):
                            # pygame.display.update()
 
                             output ="0" +grid.cell_states[0] + "0"
-                            prop_distance += hamming(output,target)**2.
+                            prop_distance += equi_dist(output,target)**2.
                             print("I: ", inp)
                             print("O: ", output)
                             print("T: ", target)
                             print("")
 
                         C = (2*remove) - 1 - 0.001
-                        prop_prior = -np.log(len(curr_rules) - C + 1)
+                        prop_prior = -np.log2(len(curr_rules) - C + 1)
        
-                        prop_likelihood =  -2*np.log(prop_distance)
+                        prop_likelihood =  -2*np.log2(prop_distance)
                         #prop_posterior = np.exp(prop_prior + prop_likelihood)
-                        prop_posterior = np.exp(prop_prior) * np.exp(prop_likelihood)
+                        prop_posterior = (2.**(prop_prior)) * (2.**(prop_likelihood))
 
                         #output =grid.cell_states[margin-1]
                        # print(grid.cell_states)
                         #print(output,target)
                         print("D (prop): ", prop_distance)
                         print("D (curr): ", curr_distance)
-                        print("Prior, Likelihood (Prop): ", np.exp(prop_prior), np.exp(prop_likelihood ))
+                        print("Prior, Likelihood (Prop): ",2.**prop_prior, 2.**prop_likelihood )
                         print("CR: ", curr_rules)
                         print("*"*5)
 
@@ -573,13 +640,20 @@ def main(n_cells, grid_size, margin):
                                 best_rules = copy.deepcopy(curr_rules)
 
                         else:
-                            if proposal_row == -1:
+                            if proposal_row == -1 and proposal_col == -1:
                                 grid.change_all_rules(proposal_rule)
+                            elif proposal_row == -1:
+                                grid.change_col_rules(proposal_col, proposal_rule)
                             else:
                                 if proposal_col != -1:
                                     grid.change_cell_rules(proposal_row,proposal_col,proposal_rule)
                                 else:
                                     grid.change_row_rules(proposal_row, proposal_rule)
+                        
+                        if (curr_distance < 2):
+                            break
+
+
                     print("")
 
                     print("CURR:", curr_distance, curr_posterior)
@@ -600,15 +674,17 @@ def main(n_cells, grid_size, margin):
                     #grid = Grid(grid_size,margin, copy.deepcopy(start_rules))
                     grid.reset()
                     grid.reset_rules(copy.deepcopy(start_rules))
-                    grid.change_all_rules(init_rules)
+                    #grid.change_all_rules(init_rules)
                     #grid.__init__(grid_size,margin,copy.deepcopy(start_rules))
                     #for rule in start_rules:
                      #   grid.change_all_rules(rule)
 
                     for rule in best_rules:
                         print(rule)
-                        if rule[0] == -1:
+                        if rule[0] == -1 and rule[1] == -1:
                             grid.change_all_rules([rule[2]])
+                        elif rule[0] == -1:
+                            grid.change_col_rules(rule[1],[rule[2]])
                         else:
                             if rule[1] == -1:
                                 grid.change_row_rules(rule[0],[rule[2]])
@@ -624,19 +700,25 @@ def main(n_cells, grid_size, margin):
                         inp = inputs[j]
                         grid.add_input(inp)
                         grid.draw_targets(targets[j])
-                        grid.update(0.1)
+                        grid.update(0.025)
                         grid.draw_targets(targets[j])
                         output ="0" +grid.cell_states[0] + "0"
-                        d = (hamming(output, targets[j]))
+                        d = (equi_dist(output, targets[j]))
 
                         dist += d**2
                         print d, dist
 
                         pygame.display.update()
+                        t = time.time() 
+                        while time.time() - t < 0.5:
+                            pass
+
 
                     print dist
 
                     curr_rules = copy.deepcopy(best_rules)
+                    curr_likelihood = best_likelihood
+                    curr_posterior = best_posterior
 
 
 
@@ -660,7 +742,7 @@ def main(n_cells, grid_size, margin):
 
 
 if __name__ == "__main__":
-    n_cells = 25
+    n_cells = 30
     grid_size = int(width/n_cells)
     margin=1
     main(n_cells, grid_size, margin)
